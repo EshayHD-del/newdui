@@ -18,7 +18,7 @@
             --border-color: rgba(255, 255, 255, 0.15);
             --font: 'Inter', sans-serif;
             --border-radius: 8px;
-            --transition-speed: 0.1s;
+            --transition-speed: 0.2s;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,34 +56,6 @@
             border-bottom: 1px solid var(--border-color);
             border-top-left-radius: var(--border-radius);
             border-top-right-radius: var(--border-radius);
-        }
-
-        .tab-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 15px;
-            background: rgba(0,0,0,0.3);
-            font-size: 14px;
-            font-weight: 500;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .tab-button.active {
-            background: var(--accent-color);
-            color: var(--primary-text);
-        }
-
-        .tab-button:hover {
-            background: rgba(138, 43, 226, 0.3);
         }
 
         .menu-items {
@@ -196,119 +168,27 @@
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
         }
-
-        .status-panel {
-            position: absolute;
-            right: 50px;
-            top: 15vh;
-            width: 350px;
-            height: 560px;
-            background: var(--bg-color);
-            border-radius: var(--border-radius);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--border-color);
-            visibility: hidden;
-            overflow-y: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .status-panel::-webkit-scrollbar {
-            display: none;
-        }
-
-        .status-header {
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 16px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .status-content {
-            padding: 15px;
-            position: relative;
-        }
-
-        .status-selection-highlight {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            background: var(--highlight-bg);
-            z-index: 1;
-            transition: top var(--transition-speed) ease-out;
-            opacity: 0;
-        }
-
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 14px;
-            position: relative;
-            z-index: 2;
-            transition: background-color 0.2s ease;
-        }
-
-        .status-item:last-child {
-            border-bottom: none;
-        }
-
-        .status-item.selected {
-            background: rgba(138, 43, 226, 0.3);
-            margin: 0 -15px;
-            padding: 8px 15px;
-        }
-
-        .status-item:hover {
-            background: rgba(138, 43, 226, 0.2) !important;
-            cursor: pointer;
-        }
-
-        .status-on { color: #2ecc71; font-weight: 600; }
-        .status-off { color: #ff4757; font-weight: 600; }
     </style>
 </head>
 <body>
     <div id="notification-container"></div>
     <div class="menu-container" id="menu-container">
         <div class="header-image"></div>
-        <div class="tab-bar">
-            <button class="tab-button active" data-tab="Main">Main</button>
-            <button class="tab-button" data-tab="Online">Online</button>
-            <button class="tab-button" data-tab="Weapon">Weapon</button>
-            <button class="tab-button" data-tab="Emote">Emote</button>
-        </div>
         <ul class="menu-items" id="menu-items">
             <div class="selection-highlight" id="selection-highlight"></div>
         </ul>
         <div class="footer" id="footer"></div>
     </div>
-    <div class="status-panel" id="status-panel">
-        <div class="status-header" id="status-header">STATUS</div>
-        <div class="status-content" id="status-content">
-            <div class="status-selection-highlight" id="status-selection-highlight"></div>
-        </div>
-    </div>
     <script>
         const menuItemsEl = document.getElementById('menu-items');
         const footerEl = document.getElementById('footer');
-        const highlightEl = document.getElementById('selection-highlight');
         const notificationContainer = document.getElementById('notification-container');
         const menuContainer = document.getElementById('menu-container');
-        const statusPanel = document.getElementById('status-panel');
-        const statusHeader = document.getElementById('status-header');
-        const statusContent = document.getElementById('status-content');
-        const statusHighlight = document.getElementById('status-selection-highlight');
+        const highlightEl = document.getElementById('selection-highlight');
         const ITEM_HEIGHT = 41;
         let currentMenu = [];
         let currentIndex = 0;
-        let currentTab = 'Main';
-        let statusSelectedIndex = 0;
-        let isContentPanelOpen = false;
+        let navigationSound = new Audio('https://freesound.org/data/previews/242/242501_3242494-lq.mp3');
 
         function safeEncode(text) {
             if (!text || typeof text !== 'string') return '';
@@ -328,69 +208,15 @@
             setTimeout(() => notification.remove(), 3000);
         }
 
-        function updateStatusSelection(items) {
-            if (!items || items.length === 0) return;
-            const itemElements = statusContent.querySelectorAll('.status-item');
-            if (!itemElements[statusSelectedIndex]) return;
-            let itemTop = 0;
-            let itemHeight = 0;
-            for (let i = 0; i < statusSelectedIndex; i++) {
-                if (itemElements[i]) itemTop += itemElements[i].offsetHeight;
-            }
-            if (itemElements[statusSelectedIndex]) {
-                itemHeight = itemElements[statusSelectedIndex].offsetHeight;
-            }
-            statusHighlight.style.top = `${itemTop}px`;
-            statusHighlight.style.height = `${itemHeight}px`;
-            statusHighlight.style.opacity = '1';
-            const statusContentEl = statusContent.parentElement;
-            const scrollTop = statusContentEl.scrollTop;
-            const containerHeight = statusContentEl.clientHeight - statusHeader.offsetHeight;
-            const itemBottom = itemTop + itemHeight;
-            const contentPadding = 15;
-            const adjustedItemTop = itemTop + statusHeader.offsetHeight + contentPadding;
-            const adjustedItemBottom = adjustedItemTop + itemHeight;
-            if (adjustedItemTop < scrollTop + statusHeader.offsetHeight) {
-                statusContentEl.scrollTop = adjustedItemTop - statusHeader.offsetHeight;
-            } else if (adjustedItemBottom > scrollTop + statusContentEl.clientHeight) {
-                statusContentEl.scrollTop = adjustedItemBottom - statusContentEl.clientHeight;
-            }
-            itemElements.forEach((el, i) => el.classList.toggle('selected', i === statusSelectedIndex));
-        }
-
-        function renderStatusPanel(tabData) {
-            statusContent.innerHTML = '<div class="status-selection-highlight" id="status-selection-highlight"></div>';
-            const statusHighlightEl = document.getElementById('status-selection-highlight');
-            if (!tabData || !tabData.submenu || !Array.isArray(tabData.submenu)) return;
-            tabData.submenu.forEach((item, index) => {
-                const element = document.createElement('div');
-                element.className = 'status-item';
-                let content = `<span>${safeEncode(item.label)}</span>`;
-                if (item.type === 'checkbox') {
-                    const statusClass = item.checked ? 'status-on' : 'status-off';
-                    const statusText = item.checked ? 'ON' : 'OFF';
-                    content += `<span class="${statusClass}">${statusText}</span>`;
-                } else if (item.type === 'slider') {
-                    content += `<span>${item.value}</span>`;
-                } else if (item.type === 'scroll') {
-                    content += `<span>${safeEncode(item.options[item.selected].label)}</span>`;
-                }
-                element.innerHTML = content;
-                element.addEventListener('click', () => {
-                    statusSelectedIndex = index;
-                    updateStatusSelection(tabData.submenu);
-                    window.parent.postMessage({ action: 'select', index, isContentPanel: true }, '*');
-                });
-                statusContent.appendChild(element);
-            });
-            statusSelectedIndex = 0;
-            updateStatusSelection(tabData.submenu);
+        function playNavigationSound() {
+            navigationSound.currentTime = 0;
+            navigationSound.play().catch(err => console.log('Audio play failed:', err));
         }
 
         function renderMenu() {
             menuItemsEl.innerHTML = '<div class="selection-highlight" id="selection-highlight"></div>';
-            const items = currentTab === 'Main' ? currentMenu : currentMenu.find(m => m.label === currentTab)?.submenu || [];
-            items.forEach((item, index) => {
+            const highlight = document.getElementById('selection-highlight');
+            currentMenu.forEach((item, index) => {
                 const menuItemEl = document.createElement('li');
                 menuItemEl.className = `menu-item ${index === currentIndex ? 'selected' : ''}`;
                 let content = '<div class="item-content">';
@@ -403,14 +229,14 @@
                     content += `<div class="item-value"><span class="toggle-indicator ${isChecked ? 'on' : 'off'}">${isChecked ? 'ON' : 'OFF'}</span></div>`;
                 } else if (item.type === 'slider') {
                     const percent = ((item.value - item.min) / (item.max - item.min)) * 100;
-                    content += `<div class="item-value slider-container"><div class="slider-bar"><div class="slider-fill" style="width: ${percent}%"></div></div><span>${item.value}</span></div>`;
+                    content += `<div class="item-value slider-container"><div class="slider-bar"><div class="slider-fill" style="width: ${percent}%"></div></div><span>${item.value.toFixed(1)}</span></div>`;
                 } else if (item.type === 'scroll') {
                     content += `<div class="item-value">${safeEncode(item.options[item.selected].label)}</div>`;
                 }
                 content += '</div>';
                 menuItemEl.innerHTML = content;
                 menuItemEl.addEventListener('click', () => {
-                    window.parent.postMessage({ action: 'select', index, isContentPanel: false }, '*');
+                    window.parent.postMessage({ action: 'select', index }, '*');
                 });
                 menuItemsEl.appendChild(menuItemEl);
             });
@@ -423,8 +249,8 @@
             } else if (itemBottom > scrollTop + containerHeight) {
                 menuItemsEl.scrollTop = itemBottom - containerHeight;
             }
-            highlightEl.style.top = `${itemTop - menuItemsEl.scrollTop}px`;
-            footerEl.textContent = items[currentIndex]?.description || `Current Tab: ${currentTab}`;
+            highlight.style.top = `${itemTop - menuItemsEl.scrollTop}px`;
+            footerEl.textContent = currentMenu[currentIndex]?.description || '';
         }
 
         function postMessageToLua(data) {
@@ -435,36 +261,17 @@
             const data = event.data;
             if (data.action === 'setVisible') {
                 menuContainer.style.visibility = data.visible ? 'visible' : 'hidden';
-                if (!data.visible) statusPanel.style.visibility = 'hidden';
             } else if (data.action === 'setCurrent') {
+                const oldIndex = currentIndex;
                 currentMenu = data.menu;
                 currentIndex = data.current;
-                isContentPanelOpen = data.isContentPanelOpen || false;
-                if (isContentPanelOpen) {
-                    statusPanel.style.visibility = 'visible';
-                    const activeTab = currentMenu.find(m => m.label === currentTab);
-                    statusHeader.textContent = activeTab?.label || 'STATUS';
-                    renderStatusPanel(activeTab);
-                } else {
-                    statusPanel.style.visibility = 'hidden';
+                if (oldIndex !== currentIndex) {
+                    playNavigationSound();
                 }
                 renderMenu();
             } else if (data.action === 'notify') {
                 showNotification(data.message, data.type);
             }
-        });
-
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                currentTab = button.dataset.tab;
-                currentIndex = 0;
-                isContentPanelOpen = false;
-                statusPanel.style.visibility = 'hidden';
-                renderMenu();
-                postMessageToLua({ action: 'tabChange', tab: currentTab });
-            });
         });
     </script>
 </body>
